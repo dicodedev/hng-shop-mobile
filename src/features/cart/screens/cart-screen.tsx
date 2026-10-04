@@ -153,12 +153,14 @@ export function CartScreen() {
             ) : null}
 
             <PrimaryButton
-              disabled
-              label="Checkout coming next"
+              disabled={!enabled}
+              label="Checkout"
+              onPress={() => router.push("/checkout")}
               style={styles.checkout}
             />
             <Text style={styles.checkoutNote}>
-              Checkout and payment connect once our order service is deployed.
+              Complimentary delivery across Nigeria. Prices are confirmed before
+              payment.
             </Text>
           </ScrollView>
         )}

@@ -19,11 +19,17 @@ Only Expo-public, non-secret values belong in this application. Supabase service
 
 ## Deployed backend status
 
-Verified against `https://hng-shop-task.vercel.app` on 2026-10-03:
+All fifteen contract operations are live as of 2026-10-03. Run `pnpm test:contract`
+after any backend deployment; it probes the catalogue, profile, cart, order, payment,
+and return-bridge routes and fails on drift.
 
-- `GET /api/v1/products` and `GET /api/v1/products/{slug}` are live and contract compliant.
-- `GET /api/v1/me` is live and returns `application/problem+json` when unauthenticated.
-- The `/api/v1/cart` routes exist and require authentication.
-- The `/api/v1/orders*` family is not deployed; those paths fall through to the web app and can answer `200 text/html`. The transport client rejects non-JSON success bodies so a web page can never be parsed as order data.
+Retain the transport rule that rejects non-JSON success bodies. A route that falls
+through to the web application can answer `200 text/html`, so a status code alone is
+never sufficient evidence of a valid response.
 
-Run `pnpm test:contract` after backend deployments to detect drift.
+## Release checklist
+
+- Replace the placeholder bundle identifiers and development scheme.
+- Create a development build. OAuth with a custom scheme cannot work in Expo Go.
+- Register the resolved OAuth redirect in the Supabase Auth allowlist.
+- Move to universal/app links before store submission.

@@ -6,5 +6,14 @@ jest.mock("expo-image", () => ({
 
 jest.mock("expo-router", () => ({
   Link: ({ children }: { children: ReactNode }) => children,
-  router: { back: jest.fn(), replace: jest.fn(), push: jest.fn() },
+  router: {
+    back: jest.fn(),
+    replace: jest.fn(),
+    push: jest.fn(),
+    dismissTo: jest.fn(),
+    dismissAll: jest.fn(),
+    canGoBack: jest.fn(() => false),
+  },
+  useLocalSearchParams: jest.fn(() => ({})),
+  usePathname: jest.fn(() => "/"),
 }));

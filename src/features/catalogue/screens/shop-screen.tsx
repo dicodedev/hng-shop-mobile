@@ -107,7 +107,12 @@ export function ShopScreen() {
             refreshing={products.isRefetching && !products.isFetchingNextPage}
             renderItem={({ item, index }) => (
               <View style={columns === 2 ? styles.cell : styles.fullCell}>
-                <ProductCard compact={compact} index={index} product={item} />
+                <ProductCard
+                  compact={compact}
+                  index={index}
+                  product={item}
+                  singleColumn={columns === 1}
+                />
               </View>
             )}
             showsVerticalScrollIndicator={false}
@@ -121,7 +126,7 @@ export function ShopScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.paper },
   frame: { flex: 1, paddingHorizontal: space[5] },
-  content: { paddingBottom: space[12] },
+  content: { paddingBottom: space[6] },
   intro: { paddingTop: space[10], paddingBottom: space[10] },
   eyebrow: {
     ...type.eyebrow,
@@ -168,7 +173,9 @@ const styles = StyleSheet.create({
   },
   footer: { paddingVertical: space[8] },
   footerButton: { alignSelf: "flex-start" },
-  row: { gap: space[4] },
-  cell: { flex: 1, minWidth: 0 },
-  fullCell: { width: "100%" },
+  row: { gap: space[4], marginBottom: space[10] },
+  // Row spacing lives on the cells so it applies in both column modes and the
+  // trailing row ends flush against the list's bottom padding.
+  cell: { flex: 1, minWidth: 0, marginBottom: space[10] },
+  fullCell: { width: "100%", marginBottom: space[10] },
 });

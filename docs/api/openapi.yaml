@@ -3,9 +3,10 @@ info:
   title: HNG Shop Mobile BFF
   version: 1.0.0
   description: >-
-    Mobile-compatible contract for HNG Shop. Cart operations are implemented and
-    accept Supabase bearer tokens or web cookie sessions once the shared-cart
-    migration is applied. Other mobile operations remain target contracts.
+    Mobile-compatible contract for HNG Shop. Product, profile, cart, order, and
+    payment operations are implemented. Authenticated operations accept Supabase
+    bearer tokens or web cookie sessions once the required database migrations are
+    applied.
 servers:
   - url: /api/v1
     description: Version 1 API relative to the canonical deployed origin.
@@ -63,6 +64,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "429":
           $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /me:
     get:
       operationId: getMe
@@ -86,6 +89,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "429":
           $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /cart:
     get:
       operationId: getCart
@@ -239,12 +244,16 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/ValidationFailed"
         "429":
           $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
     get:
@@ -268,10 +277,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OrderPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "429":
           $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /orders/{orderNumber}:
     get:
       operationId: getOrder
@@ -301,11 +314,13 @@ paths:
           $ref: "#/components/responses/NotFound"
         "429":
           $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /orders/{orderNumber}/payment-sessions:
     post:
       operationId: createPaymentSession
       tags: [Payments]
-      summary: Create or safely reuse hosted Paystack checkout for an owned order
+      summary: Initialize hosted Paystack checkout for an owned order
       security:
         - supabaseBearer: []
       parameters:
@@ -335,6 +350,8 @@ paths:
           $ref: "#/components/responses/RateLimited"
         "502":
           $ref: "#/components/responses/ProviderUnavailable"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /orders/{orderNumber}/payment-status:
     get:
       operationId: getPaymentStatus
@@ -364,6 +381,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "429":
           $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /payments/paystack/return:
     get:
       operationId: handlePaystackReturn
@@ -380,8 +399,7 @@ paths:
           required: true
           schema:
             type: string
-            minLength: 8
-            maxLength: 100
+            pattern: "^HNG-[0-9]{4}-[A-Z0-9]{4,20}$"
       responses:
         "302":
           description: Redirect to the fixed app/universal link
@@ -392,8 +410,6 @@ paths:
                 format: uri
         "400":
           $ref: "#/components/responses/BadRequest"
-        "502":
-          $ref: "#/components/responses/ProviderUnavailable"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
   /api/webhooks/paystack:
@@ -555,6 +571,12 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
+    Forbidden:
+      description: Authenticated caller is not allowed to perform the operation
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     NotFound:
       description: Resource missing or not owned by caller
       content:
@@ -586,6 +608,12 @@ components:
             $ref: "#/components/schemas/Problem"
     ProviderUnavailable:
       description: Paystack provider call failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    InternalError:
+      description: Unexpected server failure
       content:
         application/problem+json:
           schema:
@@ -807,7 +835,8 @@ components:
           maxLength: 120
         phone:
           type: string
-          pattern: "^\\+234[7-9][0-9]{9}$"
+          maxLength: 24
+          description: Nigerian number normalized to E.164 by the server.
         addressLine1:
           type: string
           minLength: 3

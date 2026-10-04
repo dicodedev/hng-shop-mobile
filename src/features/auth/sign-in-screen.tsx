@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PrimaryButton } from "@/components/primary-button";
 import { EditorialState } from "@/components/editorial-state";
+import { ScreenHeader } from "@/components/screen-header";
 import { colors, control, fonts, space, type } from "@/design/theme";
 import { useAuth } from "@/auth/session-provider";
 import { resolveIntentPath } from "@/auth/redirect-state";
@@ -19,6 +20,13 @@ export function SignInScreen() {
 
   const destination =
     resolveIntentPath(params.intent, { slug: params.slug }) ?? "/";
+
+  // Sign-in can be cold-started from a link, so fall back to the intended
+  // destination instead of exiting the app when there is no history.
+  const leaveSignIn = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace(destination);
+  };
 
   const handleSignIn = async () => {
     setBusy(true);
@@ -50,17 +58,9 @@ export function SignInScreen() {
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
-      <View style={styles.frame}>
-        <Pressable
-          accessibilityLabel="Back"
-          accessibilityRole="button"
-          hitSlop={12}
-          onPress={() => router.back()}
-          style={styles.back}
-        >
-          <Text style={styles.backLabel}>Back</Text>
-        </Pressable>
+      <ScreenHeader back={{ label: "Back", href: "/", onPress: leaveSignIn }} />
 
+      <View style={styles.frame}>
         <Text style={styles.eyebrow}>HNG Shop</Text>
         <Text accessibilityRole="header" style={styles.headline}>
           A considered way to shop.
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontWeight: "700",
     textTransform: "uppercase",
-    marginTop: space[8],
+    marginTop: space[6],
   },
   headline: {
     ...type.displayScreen,

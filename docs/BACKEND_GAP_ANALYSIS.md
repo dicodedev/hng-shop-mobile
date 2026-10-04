@@ -6,18 +6,18 @@ The current backend is secure for its web use case but most customer surfaces re
 
 ## Required before mobile integration
 
-| Gap                   | Current state                               | Required target                                            |
-| --------------------- | ------------------------------------------- | ---------------------------------------------------------- |
-| Bearer authentication | APIs use Supabase cookie sessions           | Validate Supabase bearer JWT and create user-scoped client |
-| Versioned JSON API    | No `/api/v1` customer read API              | Implement OpenAPI operations                               |
-| Product reads         | Server-rendered pages/direct Supabase reads | Stable product DTO endpoints                               |
-| Profile read          | Server-rendered account page                | `GET /api/v1/me`                                           |
-| Order reads           | Server-rendered RPC consumers               | Owner-scoped paginated JSON endpoints                      |
-| Payment status        | No authenticated JSON status endpoint       | Small polling endpoint                                     |
-| Native OAuth          | Web callback creates cookies                | Supabase mobile PKCE and app links                         |
-| Payment return        | HTML callback on web origin                 | HTTPS verification bridge to fixed app link                |
-| Error format          | `{ error: string }`                         | Stable machine codes and request IDs                       |
-| Pagination            | Fixed order limit                           | Opaque cursor pagination                                   |
+| Gap                   | Current state                         | Required target                                            |
+| --------------------- | ------------------------------------- | ---------------------------------------------------------- |
+| Bearer authentication | APIs use Supabase cookie sessions     | Validate Supabase bearer JWT and create user-scoped client |
+| Versioned JSON API    | No `/api/v1` customer read API        | Implement OpenAPI operations                               |
+| Product reads         | Stable active-product DTO endpoints   | Connect and verify the mobile client                       |
+| Profile read          | Dual-authenticated `GET /api/v1/me`   | Connect and verify the mobile client                       |
+| Order reads           | Owner-scoped paginated JSON endpoints | Connect and verify the mobile client                       |
+| Payment status        | Owner-scoped JSON polling endpoint    | Connect and verify the mobile client                       |
+| Native OAuth          | Web callback creates cookies          | Supabase mobile PKCE and app links                         |
+| Payment return        | Fixed mobile redirect bridge          | Configure and verify the installed app link                |
+| Error format          | `{ error: string }`                   | Stable machine codes and request IDs                       |
+| Pagination            | Fixed order limit                     | Opaque cursor pagination                                   |
 
 The bearer-authentication row is a gap for the broader BFF, not for the existing shared-cart routes.
 
@@ -31,7 +31,7 @@ The bearer-authentication row is a gap for the broader BFF, not for the existing
 
 ### Service configuration
 
-- Apply all three database migrations to the production Supabase project, including `20261002000000_shared_cart.sql`.
+- Apply all four database migrations to the production Supabase project, including `20261002000000_shared_cart.sql` and `20261003000000_order_list_index.sql`.
 - Configure non-empty service-role key server-side.
 - Configure Paystack webhook URL and test/live keys per environment.
 - Use a verified Mailgun domain, not a sandbox domain for customers.
@@ -40,7 +40,7 @@ The bearer-authentication row is a gap for the broader BFF, not for the existing
 
 ### Payment reliability
 
-- Decide whether retries reuse one order reference or create multiple payment transaction attempts.
+- Payment-session retries deliberately reuse the order number as the single Paystack reference.
 - If multiple attempts are required, add a migration and provider-attempt model.
 - Separate payment settlement outcome from email outcome in all callback/webhook paths.
 - Add request IDs and safe settlement logging.
@@ -69,7 +69,7 @@ The current checkout list contains all 36 states but omits Federal Capital Terri
 
 ### Payment retry model
 
-Current order number is also the unique Paystack reference. That supports idempotent reinitialization but not a clean history of multiple attempts. Decide and migrate deliberately before implementing `payment-sessions`.
+Current order number is also the unique Paystack reference. Payment-session retries deliberately reinitialize that reference; the system does not retain a history of provider attempts.
 
 ### State validation location
 
@@ -108,12 +108,9 @@ Current callback copy can claim confirmation email before reading persisted emai
 ## Suggested backend work sequence
 
 1. Reuse the existing cart auth resolver pattern for BFF operations that need web cookie or mobile bearer access without service-role impersonation.
-2. Add DTO validators and standard problem responses.
-3. Add product and profile reads.
-4. Add owner-scoped order reads with cursor pagination.
-5. Add the mobile order-creation wrapper using existing `create_order_from_cart`.
-6. Add payment-session model and endpoint.
-7. Add payment-status endpoint.
-8. Add Paystack HTTPS return bridge and fixed mobile redirect.
-9. Add rate limiting, request IDs, and contract tests.
-10. Add durable email retry or admin resend.
+2. Reuse the existing DTO validators and standard problem responses.
+3. Connect and verify the existing product and profile reads.
+4. Connect and verify the owner-scoped order reads and creation endpoint.
+5. Configure and verify the payment-session, status, and return endpoints.
+6. Add rate limiting, request IDs, and contract tests.
+7. Add durable email retry or admin resend.

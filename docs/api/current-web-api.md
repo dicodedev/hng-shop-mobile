@@ -1,8 +1,31 @@
 # Existing Web API and Data Interface
 
-This document describes what exists in the current repository. It is not the complete target mobile contract. Most current Next.js customer route handlers authenticate through Supabase cookie sessions; the shared-cart routes accept either those cookies or a Supabase bearer access token.
+This document describes what exists in the current repository. It is not the complete target mobile contract. Most current Next.js customer route handlers authenticate through Supabase cookie sessions; versioned profile, cart, order, and payment routes accept either those cookies or a Supabase bearer access token.
 
 ## HTTP endpoints
+
+### Product and profile endpoints
+
+| Endpoint                      | Authentication                | Behavior                       |
+| ----------------------------- | ----------------------------- | ------------------------------ |
+| `GET /api/v1/products`        | Public                        | Paginated active-product list  |
+| `GET /api/v1/products/{slug}` | Public                        | Active product detail          |
+| `GET /api/v1/me`              | Cookie or Supabase bearer JWT | Authenticated profile identity |
+
+Product responses use stable camelCase DTOs and integer-kobo NGN prices without exposing product administration fields. Profile responses are owner-scoped by RLS and use `Cache-Control: private, no-store`.
+
+### Order and payment endpoints
+
+| Endpoint                                                | Behavior                                       |
+| ------------------------------------------------------- | ---------------------------------------------- |
+| `POST /api/v1/orders`                                   | Create/replay from the locked canonical cart   |
+| `GET /api/v1/orders`                                    | Owner-scoped cursor-paginated summaries        |
+| `GET /api/v1/orders/{orderNumber}`                      | Owner-scoped immutable order detail            |
+| `POST /api/v1/orders/{orderNumber}/payment-sessions`    | Initialize/reuse hosted Paystack checkout      |
+| `GET /api/v1/orders/{orderNumber}/payment-status`       | Read authoritative payment/fulfillment status  |
+| `GET /payments/paystack/return?reference={orderNumber}` | Verify, settle, and redirect to the mobile app |
+
+Authenticated endpoints accept cookie or bearer sessions and return `private, no-store` responses. The public return route uses only server-side Paystack verification and redirects to the fixed server-configured `PAYSTACK_RETURN_URL`; deep-link query data is never payment authority.
 
 ### `POST /api/checkout`
 

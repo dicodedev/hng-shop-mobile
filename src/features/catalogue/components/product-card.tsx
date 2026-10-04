@@ -6,10 +6,33 @@ import { colors, fonts, radius, space, type } from "@/design/theme";
 import type { Product } from "@/features/catalogue/schema";
 import { formatNgn } from "@/lib/money";
 
-type ProductCardProps = { product: Product; index: number; compact: boolean };
+type ProductCardProps = {
+  product: Product;
+  /**
+   * Rhythm variant. Landscape crops appear every third product, matching the
+   * editorial intent in `DESIGN_SYSTEM.md`.
+   */
+  index: number;
+  compact: boolean;
+  /**
+   * True when the catalogue renders a single column. Rhythm crops are skipped
+   * in a multi-column grid because a short landscape card would leave a void
+   * beside a taller portrait neighbour.
+   */
+  singleColumn: boolean;
+};
 
-export function ProductCard({ product, index, compact }: ProductCardProps) {
-  const portrait = compact || index % 3 !== 1;
+export function ProductCard({
+  product,
+  index,
+  compact,
+  singleColumn,
+}: ProductCardProps) {
+  // Narrow layouts and large text keep the portrait crop. A multi-column grid
+  // also stays uniform, because a short landscape card beside a tall portrait
+  // neighbour leaves a void. Rhythm crops apply only in the roomier
+  // single-column layout.
+  const portrait = compact || !singleColumn || index % 3 !== 1;
 
   return (
     <Link
@@ -52,7 +75,9 @@ export function ProductCard({ product, index, compact }: ProductCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: { flex: 1, minWidth: 0, paddingBottom: space[8] },
+  // No trailing padding here: row spacing belongs to the list so the final
+  // row does not leave a dead band above the list's own bottom padding.
+  card: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.72 },
   image: {
     width: "100%",

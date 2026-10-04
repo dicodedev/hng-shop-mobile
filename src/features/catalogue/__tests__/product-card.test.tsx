@@ -16,6 +16,7 @@ describe("ProductCard", () => {
         compact={false}
         index={1}
         product={productBySlug("adire-weekender")}
+        singleColumn
       />,
     );
 
@@ -33,6 +34,7 @@ describe("ProductCard", () => {
         compact={false}
         index={0}
         product={productBySlug("adire-weekender")}
+        singleColumn
       />,
     );
     fireEvent.press(
@@ -46,8 +48,45 @@ describe("ProductCard", () => {
         compact
         index={0}
         product={productBySlug("terracotta-table-lamp")}
+        singleColumn
       />,
     );
     expect(screen.getByText("₦42,000")).toBeOnTheScreen();
+  });
+
+  it("keeps every card the same height in a multi-column grid", () => {
+    // Index 1 is the rhythm variant, normally rendered as a landscape crop.
+    // Inside a two-column grid that short card would leave a void beside a
+    // taller neighbour, so the rhythm is suppressed.
+    render(
+      <ProductCard
+        compact={false}
+        index={1}
+        product={productBySlug("adire-weekender")}
+        singleColumn={false}
+      />,
+    );
+
+    const image = screen.getByLabelText("Adire Weekender");
+    // aspectRatio 4/5 is the portrait style; 5/4 would be the landscape one.
+    expect(image.props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ aspectRatio: 4 / 5 })]),
+    );
+  });
+
+  it("keeps the landscape rhythm crop in a single-column layout", () => {
+    render(
+      <ProductCard
+        compact={false}
+        index={1}
+        product={productBySlug("adire-weekender")}
+        singleColumn
+      />,
+    );
+
+    const image = screen.getByLabelText("Adire Weekender");
+    expect(image.props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ aspectRatio: 5 / 4 })]),
+    );
   });
 });

@@ -8,7 +8,11 @@ import {
 
 import { useAuth } from "@/auth/session-provider";
 import { httpCartRepository } from "@/features/cart/cart-repository";
-import { MAX_ITEM_QUANTITY, type Cart } from "@/features/cart/schema";
+import {
+  cartItemCount,
+  MAX_ITEM_QUANTITY,
+  type Cart,
+} from "@/features/cart/schema";
 
 export const cartKeys = {
   all: ["cart"] as const,
@@ -29,6 +33,17 @@ export class CartMutationBlockedError extends Error {
 /** Invalidates the canonical cart so the next read comes from the API. */
 export function invalidateCart(queryClient: QueryClient): void {
   void queryClient.invalidateQueries({ queryKey: cartKeys.detail() });
+}
+
+/**
+ * Unit count for the tab badge and the stack-screen cart control.
+ *
+ * Single source of truth so the number is never computed two different ways.
+ * Returns 0 when signed out, because the cart belongs to an account.
+ */
+export function useCartItemCount(): number {
+  const cart = useCartQuery();
+  return cartItemCount(cart.data);
 }
 
 /**

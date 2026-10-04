@@ -1,15 +1,15 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/auth/session-provider";
 import { EditorialState } from "@/components/editorial-state";
+import { ScreenHeader } from "@/components/screen-header";
 import { PrimaryButton } from "@/components/primary-button";
-import { colors, control, fonts, radius, space, type } from "@/design/theme";
+import { colors, fonts, radius, space, type } from "@/design/theme";
 import { useCartMutations } from "@/features/cart/queries";
 import { MAX_ITEM_QUANTITY } from "@/features/cart/schema";
 import { productQuery } from "@/features/catalogue/queries";
@@ -50,19 +50,14 @@ export function ProductScreen({ slug }: { slug: string }) {
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
-      <View style={styles.topBar}>
-        <Pressable
-          accessibilityLabel="Back to collection"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => router.back()}
-          style={styles.back}
-        >
-          <Ionicons color={colors.ink} name="arrow-back" size={22} />
-          <Text style={styles.backLabel}>Collection</Text>
-        </Pressable>
-        <Text style={styles.wordmark}>HNG Shop</Text>
-      </View>
+      <ScreenHeader
+        back={{
+          label: "Back",
+          accessibilityLabel: "Back to collection",
+          href: "/",
+        }}
+        showCart
+      />
 
       {product.isPending ? (
         <View
@@ -142,6 +137,15 @@ export function ProductScreen({ slug }: { slug: string }) {
               {actionError}
             </Text>
           ) : null}
+          {announcement && authenticated ? (
+            // Once a line exists, offer the next step rather than making the
+            // customer hunt for the cart.
+            <PrimaryButton
+              label="View cart"
+              onPress={() => router.push("/cart")}
+              style={styles.viewCart}
+            />
+          ) : null}
           {!authenticated ? (
             <Text style={styles.cartNote}>
               {configured
@@ -177,29 +181,6 @@ export function ProductScreen({ slug }: { slug: string }) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.paper },
-  topBar: {
-    minHeight: 64,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomColor: colors.line,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: space[5],
-  },
-  back: {
-    minHeight: control.minimumTouchTarget,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space[2],
-  },
-  backLabel: {
-    ...type.label,
-    color: colors.ink,
-    fontFamily: fonts.sans,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  wordmark: { ...type.title, color: colors.ink, fontFamily: fonts.display },
   content: {
     paddingHorizontal: space[5],
     paddingTop: space[5],
@@ -239,6 +220,7 @@ const styles = StyleSheet.create({
     marginTop: space[6],
   },
   button: { marginTop: space[8] },
+  viewCart: { marginTop: space[4] },
   announcement: {
     ...type.bodySmall,
     color: colors.moss,

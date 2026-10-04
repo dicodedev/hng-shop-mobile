@@ -2,8 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
 import { colors, fonts } from "@/design/theme";
-import { useCartQuery } from "@/features/cart/queries";
-import { cartItemCount } from "@/features/cart/schema";
+import { useCartItemCount } from "@/features/cart/queries";
 
 const icons = {
   index: ["storefront-outline", "storefront"],
@@ -13,8 +12,7 @@ const icons = {
 } as const;
 
 export default function TabLayout() {
-  const cart = useCartQuery();
-  const itemCount = cartItemCount(cart.data);
+  const itemCount = useCartItemCount();
 
   return (
     <Tabs

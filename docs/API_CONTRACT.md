@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the version 1 contract for the mobile-compatible backend. The canonical machine-readable definition is `api/openapi.yaml`. The shared-cart endpoints are existing in source and accept cookie or bearer authentication, but require the shared-cart migration in each deployed database. The remaining mobile operations are targets unless explicitly marked existing.
+This is the version 1 contract for the mobile-compatible backend. The canonical machine-readable definition is `api/openapi.yaml`. Product, profile, and shared-cart endpoints are existing in source. Authenticated endpoints accept cookie or bearer authentication, and cart operations require the shared-cart migration in each deployed database. The remaining mobile operations are targets unless explicitly marked existing.
 
 ## Base URL and versioning
 
@@ -95,7 +95,7 @@ List endpoints use opaque cursor pagination:
 
 ## Endpoint summary
 
-### `GET /products`
+### `GET /products` (**Existing**)
 
 Public active-product list.
 
@@ -104,11 +104,11 @@ Query:
 - `cursor`, optional.
 - `limit`, 1–50.
 
-### `GET /products/{slug}`
+### `GET /products/{slug}` (**Existing**)
 
 Public active product detail. Missing and archived products both return `404`.
 
-### `GET /me`
+### `GET /me` (**Existing**)
 
 Returns authenticated profile identity. No profile or role mutation endpoint exists.
 
@@ -141,7 +141,7 @@ Cart rules:
 - Web and mobile share the same cart. Sign-out does not delete it.
 - Subscribe to the owner-scoped `public.carts` header in Supabase Realtime, then refetch `GET /cart` when its version advances. Never subscribe directly to `cart_items`.
 
-### `POST /orders`
+### `POST /orders` (**Existing**)
 
 Creates or replays an order using server-authoritative product data.
 
@@ -157,25 +157,31 @@ Request includes delivery fields only. The idempotency key is the header; the ba
 - `200`: idempotent replay.
 - Response includes `idempotencyReplayed`.
 
-### `GET /orders`
+### `GET /orders` (**Existing**)
 
 Owner-scoped cursor-paginated order summaries.
 
-### `GET /orders/{orderNumber}`
+### `GET /orders/{orderNumber}` (**Existing**)
 
 Owner-scoped detail with immutable line snapshots and delivery information. Missing and non-owned resources both return `404`.
 
-### `POST /orders/{orderNumber}/payment-sessions`
+### `POST /orders/{orderNumber}/payment-sessions` (**Existing**)
 
-Creates or safely reuses a hosted Paystack payment attempt for an owned unpaid order.
+Initializes hosted Paystack checkout for an owned unpaid order. Retries reuse the order number as the single provider reference; there is no provider-attempt history or persisted authorization URL.
+
+Header:
+
+```http
+Idempotency-Key: <uuid>
+```
 
 The server derives reference, amount, currency, email, and callback URL. Clients supply none of those values.
 
-### `GET /orders/{orderNumber}/payment-status`
+### `GET /orders/{orderNumber}/payment-status` (**Existing**)
 
 Small owner-scoped polling response used after the app returns from Paystack or resumes from the background.
 
-### `GET /payments/paystack/return`
+### `GET /payments/paystack/return` (**Existing**)
 
 Public provider return bridge outside `/api/v1`.
 
@@ -187,7 +193,7 @@ Behavior:
 4. Attempt confirmation after first settlement.
 5. Redirect only to a fixed configured app/universal link.
 
-The redirect carries navigation data only. The app fetches authenticated payment status before rendering success.
+The fixed redirect is configured through the server-only `PAYSTACK_RETURN_URL`. Development uses `hngshop-dev://payment/result`; production should use an allowlisted app/universal link. The redirect carries `orderNumber` and a non-authoritative `outcome` only. The app fetches authenticated payment status before rendering success.
 
 ### `POST /api/webhooks/paystack`
 

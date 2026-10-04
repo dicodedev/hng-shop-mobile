@@ -1,5 +1,3 @@
-import { ComingSoonScreen } from "@/components/coming-soon-screen";
+import { OrdersScreen } from "@/features/orders/screens/orders-screen";
 
-export default function OrdersRoute() {
-  return <ComingSoonScreen section="Orders" />;
-}
+export default OrdersScreen;

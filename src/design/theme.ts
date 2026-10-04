@@ -36,6 +36,7 @@ export const type = {
   bodySmall: { fontSize: 14, lineHeight: 20 },
   label: { fontSize: 12, lineHeight: 16, letterSpacing: 1.4 },
   eyebrow: { fontSize: 12, lineHeight: 16, letterSpacing: 2.6 },
+  badge: { fontSize: 11, lineHeight: 14, letterSpacing: 1.3 },
 } as const;
 
 export const space = {

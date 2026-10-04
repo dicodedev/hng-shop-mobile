@@ -69,6 +69,8 @@ export type ApiRequestOptions = {
   body?: unknown;
   /** Supabase access token. Never persisted outside secure storage. */
   token?: string | null;
+  /** Extra request headers, for example `Idempotency-Key`. */
+  headers?: Record<string, string>;
   signal?: AbortSignal;
   timeoutMs?: number;
 };
@@ -147,7 +149,10 @@ async function requestJson(
   const abortFromCaller = () => controller.abort();
   options.signal?.addEventListener("abort", abortFromCaller);
 
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...options.headers,
+  };
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers["Content-Type"] = "application/json";
 

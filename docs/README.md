@@ -59,7 +59,7 @@ Labels used throughout this package:
 - **Gap:** work required before the target behavior exists.
 - **Future:** explicitly outside the first mobile release.
 
-The shared-cart endpoints already accept either Supabase cookie sessions or bearer access tokens. The rest of the current Next.js customer surface is primarily cookie-oriented, and the broader target mobile API remains proposed. Do not point the mobile app at cookie-only endpoints and do not put service-role, Paystack, Mailgun, or webhook secrets in the mobile repository.
+The product, profile, shared-cart, order, and payment endpoints are implemented. Authenticated versioned endpoints accept either Supabase cookie sessions or bearer access tokens. Do not point the mobile app at cookie-only endpoints and do not put service-role, Paystack, Mailgun, or webhook secrets in the mobile repository.
 
 Cart status labels:
 
