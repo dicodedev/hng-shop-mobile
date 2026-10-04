@@ -1,0 +1,1133 @@
+openapi: 3.1.0
+info:
+  title: HNG Shop Mobile BFF
+  version: 1.0.0
+  description: >-
+    Mobile-compatible contract for HNG Shop. Cart operations are implemented and
+    accept Supabase bearer tokens or web cookie sessions once the shared-cart
+    migration is applied. Other mobile operations remain target contracts.
+servers:
+  - url: /api/v1
+    description: Version 1 API relative to the canonical deployed origin.
+tags:
+  - name: Products
+    description: Public active-product catalogue.
+  - name: Account
+    description: Authenticated customer identity.
+  - name: Cart
+    description: Existing authenticated canonical account-cart operations.
+  - name: Orders
+    description: Owner-scoped order creation and reads.
+  - name: Payments
+    description: Hosted Paystack session, verification, and status operations.
+security: []
+paths:
+  /products:
+    get:
+      operationId: listProducts
+      tags: [Products]
+      summary: List active products
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Active products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /products/{slug}:
+    get:
+      operationId: getProduct
+      tags: [Products]
+      summary: Get an active product by slug
+      parameters:
+        - $ref: "#/components/parameters/ProductSlug"
+      responses:
+        "200":
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /me:
+    get:
+      operationId: getMe
+      tags: [Account]
+      summary: Get the authenticated profile
+      security:
+        - supabaseBearer: []
+      responses:
+        "200":
+          description: Authenticated profile
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /cart:
+    get:
+      operationId: getCart
+      tags: [Cart]
+      summary: Get the canonical account cart
+      description: >-
+        Existing in source. Reads product IDs and quantities from the account cart
+        and joins current product data. Requires 20261002000000_shared_cart.sql.
+      security:
+        - supabaseBearer: []
+      responses:
+        "200":
+          $ref: "#/components/responses/CartSuccess"
+        "401":
+          $ref: "#/components/responses/CartUnauthorized"
+        "500":
+          $ref: "#/components/responses/CartOperationFailed"
+        "503":
+          $ref: "#/components/responses/CartNotConfigured"
+    delete:
+      operationId: clearCart
+      tags: [Cart]
+      summary: Clear the canonical account cart
+      description: Existing RPC-backed operation. It is not called automatically on sign-out or payment.
+      security:
+        - supabaseBearer: []
+      responses:
+        "200":
+          $ref: "#/components/responses/CartSuccess"
+        "401":
+          $ref: "#/components/responses/CartUnauthorized"
+        "500":
+          $ref: "#/components/responses/CartOperationFailed"
+        "503":
+          $ref: "#/components/responses/CartNotConfigured"
+  /cart/items:
+    post:
+      operationId: addCartItem
+      tags: [Cart]
+      summary: Add an active product or increment its cart quantity
+      description: Existing RPC-backed operation. Quantity defaults to 1 and the resulting cart is returned.
+      security:
+        - supabaseBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCartItemRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/CartSuccess"
+        "400":
+          $ref: "#/components/responses/CartInvalidRequest"
+        "401":
+          $ref: "#/components/responses/CartUnauthorized"
+        "422":
+          $ref: "#/components/responses/CartValidationFailed"
+        "500":
+          $ref: "#/components/responses/CartOperationFailed"
+        "503":
+          $ref: "#/components/responses/CartNotConfigured"
+  /cart/items/{productId}:
+    patch:
+      operationId: setCartItemQuantity
+      tags: [Cart]
+      summary: Set an existing cart line quantity
+      description: Existing RPC-backed operation using an absolute quantity from 1 through 99.
+      security:
+        - supabaseBearer: []
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetCartItemQuantityRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/CartSuccess"
+        "400":
+          $ref: "#/components/responses/CartInvalidRequest"
+        "401":
+          $ref: "#/components/responses/CartUnauthorized"
+        "422":
+          $ref: "#/components/responses/CartValidationFailed"
+        "500":
+          $ref: "#/components/responses/CartOperationFailed"
+        "503":
+          $ref: "#/components/responses/CartNotConfigured"
+    delete:
+      operationId: removeCartItem
+      tags: [Cart]
+      summary: Remove a cart line
+      description: Existing RPC-backed operation. Removing an absent line is idempotent.
+      security:
+        - supabaseBearer: []
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          $ref: "#/components/responses/CartSuccess"
+        "400":
+          $ref: "#/components/responses/CartInvalidRequest"
+        "401":
+          $ref: "#/components/responses/CartUnauthorized"
+        "500":
+          $ref: "#/components/responses/CartOperationFailed"
+        "503":
+          $ref: "#/components/responses/CartNotConfigured"
+  /orders:
+    post:
+      operationId: createOrder
+      tags: [Orders]
+      summary: Create or replay a server-priced order
+      security:
+        - supabaseBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "200":
+          description: Idempotent replay of an existing order
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateOrderResponse"
+        "201":
+          description: Newly created order
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateOrderResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    get:
+      operationId: listOrders
+      tags: [Orders]
+      summary: List authenticated customer orders
+      security:
+        - supabaseBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Owner-scoped order summaries
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /orders/{orderNumber}:
+    get:
+      operationId: getOrder
+      tags: [Orders]
+      summary: Get an owner-scoped order detail
+      security:
+        - supabaseBearer: []
+      parameters:
+        - $ref: "#/components/parameters/OrderNumber"
+      responses:
+        "200":
+          description: Order detail
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /orders/{orderNumber}/payment-sessions:
+    post:
+      operationId: createPaymentSession
+      tags: [Payments]
+      summary: Create or safely reuse hosted Paystack checkout for an owned order
+      security:
+        - supabaseBearer: []
+      parameters:
+        - $ref: "#/components/parameters/OrderNumber"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Hosted payment session
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSession"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/ProviderUnavailable"
+  /orders/{orderNumber}/payment-status:
+    get:
+      operationId: getPaymentStatus
+      tags: [Payments]
+      summary: Get authoritative payment and fulfillment state
+      security:
+        - supabaseBearer: []
+      parameters:
+        - $ref: "#/components/parameters/OrderNumber"
+      responses:
+        "200":
+          description: Current persisted state
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /payments/paystack/return:
+    get:
+      operationId: handlePaystackReturn
+      tags: [Payments]
+      summary: Verify Paystack return and redirect to the fixed mobile app link
+      description: >-
+        Public provider return bridge. Query data is navigation input only;
+        the server verifies payment with Paystack before settlement.
+      servers:
+        - url: /
+      parameters:
+        - name: reference
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 100
+      responses:
+        "302":
+          description: Redirect to the fixed app/universal link
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "502":
+          $ref: "#/components/responses/ProviderUnavailable"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/webhooks/paystack:
+    post:
+      operationId: receivePaystackWebhook
+      tags: [Payments]
+      summary: Receive a signed Paystack event
+      description: >-
+        Existing provider endpoint. The server verifies HMAC-SHA512 over the
+        exact raw request body before parsing or changing state.
+      servers:
+        - url: /
+      parameters:
+        - name: x-paystack-signature
+          in: header
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-f0-9]{128}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Event acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [received]
+                properties:
+                  received:
+                    type: boolean
+                    const: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Invalid Paystack signature
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
+          description: Valid event could not be persisted; provider should retry
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+components:
+  securitySchemes:
+    supabaseBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase user access token obtained through mobile OAuth PKCE.
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 512
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+    ProductSlug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        maxLength: 120
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    OrderNumber:
+      name: orderNumber
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^HNG-[0-9]{4}-[A-Z0-9]{4,20}$"
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    CartSuccess:
+      description: Complete canonical cart after the operation
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+          example: private, no-store
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Cart"
+    CartInvalidRequest:
+      description: Malformed cart request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CartError"
+    CartUnauthorized:
+      description: Authentication is required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CartError"
+    CartValidationFailed:
+      description: Product, quantity, or cart limit validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CartError"
+    CartOperationFailed:
+      description: Cart operation or response failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CartError"
+    CartNotConfigured:
+      description: Shared-cart migration or PostgREST schema is unavailable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CartError"
+    BadRequest:
+      description: Malformed request
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Unauthorized:
+      description: Missing, expired, or invalid access token
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: Resource missing or not owned by caller
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Conflict:
+      description: Invalid state transition or idempotency conflict
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ValidationFailed:
+      description: Domain validation failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ValidationProblem"
+    RateLimited:
+      description: Request rate exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ProviderUnavailable:
+      description: Paystack provider call failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ServiceUnavailable:
+      description: Required backend workflow or configuration is unavailable
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    Money:
+      type: object
+      additionalProperties: false
+      required: [currency, amountKobo]
+      properties:
+        currency:
+          type: string
+          const: NGN
+        amountKobo:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+    Product:
+      type: object
+      additionalProperties: false
+      required: [id, slug, name, description, imageUrl, price]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
+        price:
+          $ref: "#/components/schemas/Money"
+    Profile:
+      type: object
+      additionalProperties: false
+      required: [id, email, fullName, avatarUrl, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        avatarUrl:
+          type: [string, "null"]
+          format: uri
+        role:
+          type: string
+          enum: [customer, admin]
+          description: Informational only; no role mutation is exposed.
+    AddCartItemRequest:
+      type: object
+      additionalProperties: false
+      required: [productId]
+      properties:
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+          default: 1
+    SetCartItemQuantityRequest:
+      type: object
+      additionalProperties: false
+      required: [quantity]
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+    CartItem:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          slug,
+          name,
+          imageUrl,
+          priceAmount,
+          currency,
+          quantity,
+          available,
+          version,
+        ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
+        priceAmount:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+          description: Current joined product price in integer kobo; display-only until checkout.
+        currency:
+          type: string
+          const: NGN
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+        available:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+    Cart:
+      type: object
+      additionalProperties: false
+      required: [items, updatedAt, version]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/CartItem"
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          minimum: 0
+          description: Compare with owner-scoped carts Realtime updates, then refetch this resource.
+    CartError:
+      type: object
+      additionalProperties: false
+      required: [code, error]
+      properties:
+        code:
+          type: string
+          enum:
+            - AUTH_REQUIRED
+            - INVALID_CART_REQUEST
+            - CART_VALIDATION_FAILED
+            - CART_OPERATION_FAILED
+            - CART_RESPONSE_INVALID
+            - CART_NOT_CONFIGURED
+        error:
+          type: string
+    NigerianRegion:
+      type: string
+      enum:
+        - Abia
+        - Adamawa
+        - Akwa Ibom
+        - Anambra
+        - Bauchi
+        - Bayelsa
+        - Benue
+        - Borno
+        - Cross River
+        - Delta
+        - Ebonyi
+        - Edo
+        - Ekiti
+        - Enugu
+        - Federal Capital Territory
+        - Gombe
+        - Imo
+        - Jigawa
+        - Kaduna
+        - Kano
+        - Katsina
+        - Kebbi
+        - Kogi
+        - Kwara
+        - Lagos
+        - Nasarawa
+        - Niger
+        - Ogun
+        - Ondo
+        - Osun
+        - Oyo
+        - Plateau
+        - Rivers
+        - Sokoto
+        - Taraba
+        - Yobe
+        - Zamfara
+    DeliveryAddressInput:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          name,
+          phone,
+          addressLine1,
+          addressLine2,
+          city,
+          state,
+          postalCode,
+          country,
+        ]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        phone:
+          type: string
+          pattern: "^\\+234[7-9][0-9]{9}$"
+        addressLine1:
+          type: string
+          minLength: 3
+          maxLength: 160
+        addressLine2:
+          type: [string, "null"]
+          maxLength: 160
+        city:
+          type: string
+          minLength: 2
+          maxLength: 100
+        state:
+          $ref: "#/components/schemas/NigerianRegion"
+        postalCode:
+          type: string
+          pattern: "^[0-9]{6}$"
+        country:
+          type: string
+          const: NG
+    CreateOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [delivery]
+      properties:
+        delivery:
+          $ref: "#/components/schemas/DeliveryAddressInput"
+    CreateOrderResponse:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          orderId,
+          orderNumber,
+          paymentStatus,
+          subtotal,
+          shipping,
+          total,
+          idempotencyReplayed,
+          createdAt,
+        ]
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+        paymentStatus:
+          $ref: "#/components/schemas/PaymentState"
+        subtotal:
+          $ref: "#/components/schemas/Money"
+        shipping:
+          $ref: "#/components/schemas/Money"
+        total:
+          $ref: "#/components/schemas/Money"
+        idempotencyReplayed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    PaymentState:
+      type: string
+      enum: [awaiting_payment, paid, failed, refunded]
+    FulfillmentState:
+      type: string
+      enum: [unfulfilled, processing, shipped, delivered, cancelled]
+    EmailState:
+      type: [string, "null"]
+      enum: [pending, sent, failed, null]
+    OrderItem:
+      type: object
+      additionalProperties: false
+      required: [productName, productImageUrl, quantity, unitPrice, lineTotal]
+      properties:
+        productName:
+          type: string
+        productImageUrl:
+          type: string
+          format: uri
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+        unitPrice:
+          $ref: "#/components/schemas/Money"
+        lineTotal:
+          $ref: "#/components/schemas/Money"
+    DeliveryAddress:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          name,
+          email,
+          phone,
+          addressLine1,
+          addressLine2,
+          city,
+          state,
+          postalCode,
+          country,
+        ]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          pattern: "^\\+234[7-9][0-9]{9}$"
+        addressLine1:
+          type: string
+        addressLine2:
+          type: [string, "null"]
+        city:
+          type: string
+        state:
+          $ref: "#/components/schemas/NigerianRegion"
+        postalCode:
+          type: string
+          pattern: "^[0-9]{6}$"
+        country:
+          type: string
+          const: NG
+    OrderSummary:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          orderId,
+          orderNumber,
+          paymentStatus,
+          fulfillmentStatus,
+          total,
+          createdAt,
+          paidAt,
+        ]
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+        paymentStatus:
+          $ref: "#/components/schemas/PaymentState"
+        fulfillmentStatus:
+          $ref: "#/components/schemas/FulfillmentState"
+        total:
+          $ref: "#/components/schemas/Money"
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: [string, "null"]
+          format: date-time
+    OrderDetail:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          orderId,
+          orderNumber,
+          paymentStatus,
+          fulfillmentStatus,
+          subtotal,
+          shipping,
+          total,
+          items,
+          delivery,
+          emailStatus,
+          createdAt,
+          paidAt,
+        ]
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+        paymentStatus:
+          $ref: "#/components/schemas/PaymentState"
+        fulfillmentStatus:
+          $ref: "#/components/schemas/FulfillmentState"
+        subtotal:
+          $ref: "#/components/schemas/Money"
+        shipping:
+          $ref: "#/components/schemas/Money"
+        total:
+          $ref: "#/components/schemas/Money"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        delivery:
+          $ref: "#/components/schemas/DeliveryAddress"
+        emailStatus:
+          $ref: "#/components/schemas/EmailState"
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: [string, "null"]
+          format: date-time
+    PaymentSession:
+      type: object
+      additionalProperties: false
+      required: [orderNumber, paymentStatus, authorizationUrl, expiresAt]
+      properties:
+        orderNumber:
+          type: string
+        paymentStatus:
+          $ref: "#/components/schemas/PaymentState"
+        authorizationUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: [string, "null"]
+          format: date-time
+    PaymentStatus:
+      type: object
+      additionalProperties: false
+      required:
+        [orderNumber, paymentStatus, fulfillmentStatus, paidAt, emailStatus]
+      properties:
+        orderNumber:
+          type: string
+        paymentStatus:
+          $ref: "#/components/schemas/PaymentState"
+        fulfillmentStatus:
+          $ref: "#/components/schemas/FulfillmentState"
+        paidAt:
+          type: [string, "null"]
+          format: date-time
+        emailStatus:
+          $ref: "#/components/schemas/EmailState"
+    PageMeta:
+      type: object
+      additionalProperties: false
+      required: [nextCursor, hasMore]
+      properties:
+        nextCursor:
+          type: [string, "null"]
+        hasMore:
+          type: boolean
+    ProductPage:
+      type: object
+      additionalProperties: false
+      required: [data, page]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    OrderPage:
+      type: object
+      additionalProperties: false
+      required: [data, page]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderSummary"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    FieldError:
+      type: object
+      additionalProperties: false
+      required: [field, code]
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, code, detail, requestId]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        code:
+          type: string
+          pattern: "^[A-Z0-9_]+$"
+        detail:
+          type: string
+        requestId:
+          type: string
+          format: uuid
+    ValidationProblem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, code, detail, requestId, errors]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        code:
+          type: string
+          pattern: "^[A-Z0-9_]+$"
+        detail:
+          type: string
+        requestId:
+          type: string
+          format: uuid
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"

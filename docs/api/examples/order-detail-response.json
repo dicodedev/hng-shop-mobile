@@ -1,0 +1,32 @@
+{
+  "orderId": "30000000-0000-4000-8000-000000000001",
+  "orderNumber": "HNG-2026-ABCD1234",
+  "paymentStatus": "paid",
+  "fulfillmentStatus": "unfulfilled",
+  "subtotal": { "currency": "NGN", "amountKobo": 2850000 },
+  "shipping": { "currency": "NGN", "amountKobo": 0 },
+  "total": { "currency": "NGN", "amountKobo": 2850000 },
+  "createdAt": "2026-10-01T11:55:00Z",
+  "paidAt": "2026-10-01T12:00:00Z",
+  "emailStatus": "sent",
+  "items": [
+    {
+      "productName": "Adire Weekender",
+      "productImageUrl": "https://images.unsplash.com/example",
+      "quantity": 1,
+      "unitPrice": { "currency": "NGN", "amountKobo": 2850000 },
+      "lineTotal": { "currency": "NGN", "amountKobo": 2850000 }
+    }
+  ],
+  "delivery": {
+    "name": "Ada Nwosu",
+    "email": "ada@example.com",
+    "phone": "+2348012345678",
+    "addressLine1": "12 Allen Avenue",
+    "addressLine2": null,
+    "city": "Ikeja",
+    "state": "Lagos",
+    "postalCode": "100001",
+    "country": "NG"
+  }
+}

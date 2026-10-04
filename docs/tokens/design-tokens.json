@@ -1,0 +1,149 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "primitive": {
+      "paper": { "$type": "color", "$value": "#F2EEE5" },
+      "paperDeep": { "$type": "color", "$value": "#E4DCCD" },
+      "ink": { "$type": "color", "$value": "#171714" },
+      "muted": { "$type": "color", "$value": "#6D695F" },
+      "line": { "$type": "color", "$value": "#CFC7B8" },
+      "accent": { "$type": "color", "$value": "#B33D20" },
+      "accentDark": { "$type": "color", "$value": "#84301C" },
+      "moss": { "$type": "color", "$value": "#33483B" },
+      "ochre": { "$type": "color", "$value": "#D7A05A" },
+      "white": { "$type": "color", "$value": "#FFFFFF" }
+    },
+    "semantic": {
+      "background": { "$type": "color", "$value": "{color.primitive.paper}" },
+      "backgroundInset": {
+        "$type": "color",
+        "$value": "{color.primitive.paperDeep}"
+      },
+      "foreground": { "$type": "color", "$value": "{color.primitive.ink}" },
+      "foregroundMuted": {
+        "$type": "color",
+        "$value": "{color.primitive.muted}"
+      },
+      "border": { "$type": "color", "$value": "{color.primitive.line}" },
+      "actionPrimary": { "$type": "color", "$value": "{color.primitive.ink}" },
+      "actionAccent": {
+        "$type": "color",
+        "$value": "{color.primitive.accent}"
+      },
+      "actionAccentPressed": {
+        "$type": "color",
+        "$value": "{color.primitive.accentDark}"
+      },
+      "statusPaid": { "$type": "color", "$value": "{color.primitive.moss}" },
+      "statusFailed": { "$type": "color", "$value": "{color.primitive.accent}" }
+    }
+  },
+  "font": {
+    "family": {
+      "displayIOS": { "$type": "fontFamily", "$value": "Iowan Old Style" },
+      "displayAndroid": { "$type": "fontFamily", "$value": "serif" },
+      "sansIOS": { "$type": "fontFamily", "$value": "Arial" },
+      "sansAndroid": { "$type": "fontFamily", "$value": "sans-serif" }
+    },
+    "size": {
+      "badge": {
+        "$type": "dimension",
+        "$value": { "value": 11, "unit": "px" }
+      },
+      "label": {
+        "$type": "dimension",
+        "$value": { "value": 12, "unit": "px" }
+      },
+      "bodySmall": {
+        "$type": "dimension",
+        "$value": { "value": 14, "unit": "px" }
+      },
+      "body": { "$type": "dimension", "$value": { "value": 16, "unit": "px" } },
+      "bodyLarge": {
+        "$type": "dimension",
+        "$value": { "value": 18, "unit": "px" }
+      },
+      "title": {
+        "$type": "dimension",
+        "$value": { "value": 24, "unit": "px" }
+      },
+      "displayMetric": {
+        "$type": "dimension",
+        "$value": { "value": 32, "unit": "px" }
+      },
+      "displaySection": {
+        "$type": "dimension",
+        "$value": { "value": 34, "unit": "px" }
+      },
+      "displayScreen": {
+        "$type": "dimension",
+        "$value": { "value": 48, "unit": "px" }
+      },
+      "displayHero": {
+        "$type": "dimension",
+        "$value": { "value": 64, "unit": "px" }
+      }
+    }
+  },
+  "space": {
+    "0": { "$type": "dimension", "$value": { "value": 0, "unit": "px" } },
+    "1": { "$type": "dimension", "$value": { "value": 4, "unit": "px" } },
+    "2": { "$type": "dimension", "$value": { "value": 8, "unit": "px" } },
+    "3": { "$type": "dimension", "$value": { "value": 12, "unit": "px" } },
+    "4": { "$type": "dimension", "$value": { "value": 16, "unit": "px" } },
+    "5": { "$type": "dimension", "$value": { "value": 20, "unit": "px" } },
+    "6": { "$type": "dimension", "$value": { "value": 24, "unit": "px" } },
+    "8": { "$type": "dimension", "$value": { "value": 32, "unit": "px" } },
+    "10": { "$type": "dimension", "$value": { "value": 40, "unit": "px" } },
+    "12": { "$type": "dimension", "$value": { "value": 48, "unit": "px" } },
+    "14": { "$type": "dimension", "$value": { "value": 56, "unit": "px" } },
+    "16": { "$type": "dimension", "$value": { "value": 64, "unit": "px" } },
+    "20": { "$type": "dimension", "$value": { "value": 80, "unit": "px" } },
+    "24": { "$type": "dimension", "$value": { "value": 96, "unit": "px" } }
+  },
+  "radius": {
+    "none": { "$type": "dimension", "$value": { "value": 0, "unit": "px" } },
+    "sm": { "$type": "dimension", "$value": { "value": 6, "unit": "px" } },
+    "md": { "$type": "dimension", "$value": { "value": 8, "unit": "px" } },
+    "lg": { "$type": "dimension", "$value": { "value": 12, "unit": "px" } },
+    "xl": { "$type": "dimension", "$value": { "value": 16, "unit": "px" } },
+    "full": { "$type": "dimension", "$value": { "value": 999, "unit": "px" } }
+  },
+  "control": {
+    "minimumTouchTarget": {
+      "$type": "dimension",
+      "$value": { "value": 44, "unit": "px" }
+    },
+    "standardHeight": {
+      "$type": "dimension",
+      "$value": { "value": 48, "unit": "px" }
+    },
+    "primaryHeight": {
+      "$type": "dimension",
+      "$value": { "value": 56, "unit": "px" }
+    }
+  },
+  "motion": {
+    "durationMicro": {
+      "$type": "duration",
+      "$value": { "value": 120, "unit": "ms" }
+    },
+    "durationControl": {
+      "$type": "duration",
+      "$value": { "value": 180, "unit": "ms" }
+    },
+    "durationReveal": {
+      "$type": "duration",
+      "$value": { "value": 240, "unit": "ms" }
+    },
+    "durationImage": {
+      "$type": "duration",
+      "$value": { "value": 300, "unit": "ms" }
+    }
+  },
+  "opacity": {
+    "disabled": { "$type": "number", "$value": 0.5 },
+    "supportingOnDark": { "$type": "number", "$value": 0.65 },
+    "dividerOnDark": { "$type": "number", "$value": 0.2 }
+  }
+}

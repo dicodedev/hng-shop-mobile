@@ -1,0 +1,12 @@
+{
+  "delivery": {
+    "name": "Ada Nwosu",
+    "phone": "+2348012345678",
+    "addressLine1": "12 Allen Avenue",
+    "addressLine2": null,
+    "city": "Ikeja",
+    "state": "Lagos",
+    "postalCode": "100001",
+    "country": "NG"
+  }
+}

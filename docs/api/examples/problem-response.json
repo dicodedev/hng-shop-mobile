@@ -1,0 +1,14 @@
+{
+  "type": "https://hng.shop/problems/product-unavailable",
+  "title": "Product unavailable",
+  "status": 422,
+  "code": "PRODUCT_UNAVAILABLE",
+  "detail": "One or more products are unavailable.",
+  "requestId": "90000000-0000-4000-8000-000000000001",
+  "errors": [
+    {
+      "field": "items[0].productId",
+      "code": "INACTIVE_PRODUCT"
+    }
+  ]
+}
